@@ -23,16 +23,16 @@ export class EditServerComponent implements OnInit, CanComponentDeactivate {
     private route: ActivatedRoute,
     private router: Router
   ) {}
-  canDeactivate: () => boolean | Promise<boolean> | Observable<boolean>;
 
   ngOnInit() {
     this.route.queryParams.subscribe();
-    this.route.fragment.subscribe();
+
     this.route.queryParams.subscribe((queryParams: Params) => {
       this.allowEdit = queryParams['allowEdit'] === '1' ? true : false;
     });
-
-    this.server = this.serversService.getServer(1);
+    this.route.fragment.subscribe();
+    const id = +this.route.snapshot.params['id'];// converting to a number +
+    this.server = this.serversService.getServer(id);
     this.serverName = this.server.name;
     this.serverStatus = this.server.status;
   }
@@ -43,8 +43,20 @@ export class EditServerComponent implements OnInit, CanComponentDeactivate {
       status: this.serverStatus,
     });
     this.changesSaved = true;
-    this.router.navigate(['../'], {relativeTo: this.route})
+    this.router.navigate(['../'], { relativeTo: this.route });
   }
-  canDeactivate():{}
-
+  canDeactivate(): Observable<boolean> | Promise<boolean> | boolean {
+    if (!this.allowEdit) {
+      return true;
+    }
+    if (
+      (this.serverName !== this.server.name ||
+        this.serverStatus !== this.server.status) &&
+      !this.changesSaved
+    ) {
+      return confirm('Do you want to discard the changes?');
+    } else {
+      return true;
+    }
+  }
 }
